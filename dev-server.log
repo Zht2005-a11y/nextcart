@@ -1,0 +1,54 @@
+
+> nextcart@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.5.25 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://172.16.144.51:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Compiled middleware in 250ms
+ ✓ Ready in 5.2s
+ ○ Compiling / ...
+ ✓ Compiled / in 3.1s
+ GET / 200 in 5032ms
+ ✓ Compiled /products in 438ms
+ GET /products 200 in 646ms
+ ✓ Compiled /products/[slug] in 369ms
+ GET /products/wireless-earphones 200 in 1215ms
+ ✓ Compiled /login in 454ms
+ GET /login 200 in 650ms
+ ✓ Compiled /register in 335ms
+ GET /register 200 in 552ms
+ ✓ Compiled /cart in 371ms
+ GET /cart 200 in 482ms
+ GET /products 200 in 184ms
+ GET /products/wireless-earphones 200 in 157ms
+ GET /login?next=%2Forders 200 in 113ms
+ GET /cart 200 in 137ms
+ GET /login?next=%2Fcheckout 200 in 116ms
+ GET /login?next=%2Forders 200 in 119ms
+ GET /login?next=%2Fadmin 200 in 124ms
+ GET /login?next=%2Fadmin%2Fproducts 200 in 102ms
+ GET /login?next=%2Fadmin%2Forders 200 in 104ms
+ GET /login?next=%2Fadmin 200 in 106ms
+ GET /login?next=%2Fcheckout 200 in 158ms
+ GET /login?next=%2Forders 200 in 123ms
+ GET /cart 200 in 235ms
+ ○ Compiling /checkout ...
+ ✓ Compiled /checkout in 655ms
+ GET /checkout 200 in 959ms
+ GET /checkout 200 in 202ms
+ GET /cart 200 in 201ms
+ ✓ Compiled /orders in 424ms
+ GET /orders 200 in 660ms
+ ✓ Compiled /admin in 346ms
+ GET /admin 200 in 655ms
+ ✓ Compiled /admin/products in 310ms
+ GET /admin/products 200 in 554ms
+ ✓ Compiled /admin/orders in 269ms
+ GET /admin/orders 200 in 431ms
+ ○ Compiling /admin/products/new ...
+ ✓ Compiled /admin/products/new in 601ms
+ GET /admin/products/new 200 in 893ms
