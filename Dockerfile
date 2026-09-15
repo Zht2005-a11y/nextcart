@@ -9,10 +9,12 @@
 # ============================================================
 
 # ---------- 阶段 1：依赖 ----------
+# 国内服务器构建慢时可指定国内镜像：docker build --build-arg NPM_REGISTRY=https://registry.npmmirror.com .
 FROM node:22-alpine AS deps
 WORKDIR /app
+ARG NPM_REGISTRY=https://registry.npmmirror.com
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --registry=$NPM_REGISTRY
 
 # ---------- 阶段 2：构建 ----------
 FROM node:22-alpine AS builder
