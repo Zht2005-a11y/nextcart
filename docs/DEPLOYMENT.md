@@ -233,6 +233,134 @@ GitHub 仓库 → **Settings → Secrets and variables → Actions**：
 
 ---
 
+## 6.5 路径 B 实操：MobaXterm 一键部署（跟着做）
+
+> 适用：已有云服务器（阿里云/腾讯云/AWS 等），本机用 MobaXterm 连接。
+> 前提：代码已推送 GitHub（本仓库 `Zht2005-a11y/nextcart`）。
+
+### 第 0 步：MobaXterm 连接服务器
+
+1. 打开 MobaXterm → 左上角 **Session** → 选 **SSH**
+2. 填写：`Remote host` = 服务器公网 IP，`Specify username` = `root`（或你的用户），Port = `22`
+3. 点 **OK** → 弹窗输入服务器密码（或密钥）
+4. 出现 `root@xxx:~#` 即连接成功（左侧文件树可拖拽上传文件，后面会用到）
+
+### 第 1 步：安装 Docker
+
+```bash
+# 看系统版本（确认是 Ubuntu/Debian 系）
+cat /etc/os-release
+
+# Ubuntu / Debian：
+sudo apt update
+sudo apt install -y docker.io docker-compose-plugin
+sudo systemctl enable --now docker
+
+# CentOS / 其他：改用官方脚本
+# curl -fsSL https://get.docker.com | sh
+# sudo systemctl enable --now docker
+
+docker --version      # 应显示 v24+ 等版本
+docker compose version  # 应显示 v2.x
+```
+
+### 第 2 步：拉取代码
+
+仓库是**私有**的，两种方式二选一：
+
+```bash
+# 方式 A：先让仓库公开（推荐学习用，仓库无密钥，一行命令切换）
+#       在你电脑上执行：gh repo edit Zht2005-a11y/nextcart --visibility public
+# 然后在服务器上：
+git clone https://github.com/Zht2005-a11y/nextcart.git
+cd nextcart
+
+# 方式 B：保持私有，用 Personal Access Token
+#   GitHub → Settings → Developer settings → Personal access tokens → Fine-grained
+#   选仓库 nextcart 的 Contents: Read 权限，生成 ghp_xxx 令牌
+git clone https://<你的账号>:ghp_xxx@github.com/Zht2005-a11y/nextcart.git
+cd nextcart
+```
+
+### 第 3 步：配置环境变量
+
+```bash
+cp .env.production.example .env.production
+nano .env.production
+```
+
+用 nano 修改（`Ctrl+W` 搜索，改完 `Ctrl+X` → `Y` → 回车保存）：
+
+| 变量 | 改成 |
+| :--- | :--- |
+| `POSTGRES_PASSWORD`（compose 里）与 `DATABASE_URL` 中的密码 | 一个强密码（两处一致） |
+| `NEXT_PUBLIC_APP_URL` | `http://<你的服务器IP>:3000` |
+
+> 没有域名前先用 IP + 端口访问；域名配置见第 6 步。
+
+### 第 4 步：启动
+
+```bash
+# 1. 启动数据库（PostgreSQL）
+docker compose up -d db
+
+# 2. 执行数据库迁移 + 种子数据（首次必做，会打印 ✅ 种子数据完成）
+docker compose run --rm migrate
+
+# 3. 启动应用
+docker compose up -d app
+
+# 4. 看应用日志确认启动成功
+docker compose logs -f app     # 看到 "Ready" / "started server" 即成功，Ctrl+C 退出
+```
+
+### 第 5 步：验证
+
+```bash
+curl -I http://localhost:3000        # 应返回 HTTP/1.1 200
+```
+浏览器打开 `http://<你的服务器IP>:3000`：
+- 首页能看到 8 件种子商品 → ✅
+- 注册第一个账号 → 自动成为管理员 → 进 `/admin` 后台 → ✅
+- 下单 → 模拟支付（未配 Stripe）→ 订单变"已付款" → ✅
+
+> ⚠️ 云服务器记得在**安全组/防火墙**放行 3000 端口（阿里云/腾讯云控制台）。
+
+### 第 6 步（进阶）：域名 + Nginx + HTTPS
+
+```bash
+# 1. 域名 DNS 解析 A 记录 → 服务器 IP
+# 2. 安装 Nginx + 证书
+sudo apt install -y nginx certbot python3-certbot-nginx
+# 3. 配置反向代理 /etc/nginx/sites-available/nextcart：
+#    server {
+#      server_name your.domain.com;
+#      location / { proxy_pass http://127.0.0.1:3000;
+#                   proxy_set_header Host $host;
+#                   proxy_set_header X-Real-IP $remote_addr; }
+#    }
+# 4. 启用并签发证书
+sudo ln -s /etc/nginx/sites-available/nextcart /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d your.domain.com
+# 5. 把 .env.production 的 NEXT_PUBLIC_APP_URL 改为 https://your.domain.com，重启：
+docker compose up -d app --force-recreate
+```
+
+### 第 7 步：日常运维（常用命令速查）
+
+```bash
+docker compose ps                    # 看服务状态
+docker compose logs -f app           # 应用日志
+docker compose logs -f db            # 数据库日志
+docker compose down                  # 停止全部（数据保留在卷里）
+docker compose down -v               # 停止并删除数据（危险！）
+docker compose pull && docker compose up -d --build   # 更新到最新代码
+docker exec -it nextcart-db psql -U nextcart -d nextcart   # 进数据库
+```
+
+---
+
 ## 7. 日常运维手册（Operations Runbook）
 
 ### 7.1 发布流程（标准动作序列）

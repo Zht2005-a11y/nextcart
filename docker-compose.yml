@@ -1,0 +1,54 @@
+# ============================================================
+# NextCart 自托管部署（docker compose）
+#
+# 用法：
+#   docker compose up -d db          # 1. 启动数据库
+#   docker compose run --rm migrate  # 2. 执行数据库迁移 + 种子数据
+#   docker compose up -d app         # 3. 启动应用
+#   docker compose logs -f app       # 查看日志
+# ============================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: nextcart-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nextcart
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-strong-password}
+      POSTGRES_DB: nextcart
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcart -d nextcart"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      target: builder
+    container_name: nextcart-migrate
+    command: sh -c "npx prisma migrate deploy && npx prisma db seed"
+    env_file: .env.production
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build: .
+    container_name: nextcart-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file: .env.production
+    environment:
+      HOSTNAME: 0.0.0.0
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
